@@ -4,6 +4,7 @@ import DessertCard from '../../features/store/components/DessertCard';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 
+
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState('cakes');
   const [reviewName, setReviewName] = useState('');

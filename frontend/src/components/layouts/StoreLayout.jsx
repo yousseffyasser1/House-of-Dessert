@@ -14,10 +14,11 @@ export default function StoreLayout() {
           {/* Logo */}
           <div className="flex items-center gap-3">
             <Link to="/" className="flex items-center gap-3">
-              <span className="text-xl font-bold tracking-tight text-amber-950 font-serif">
+            <img src={logo} alt="House Of Dessert" className="h-15 w-auto" />
+              {/* <span className="text-xl font-bold tracking-tight text-amber-950 font-serif">
                 House Of Dessert
-              </span>
-              <img src={logo} alt="House Of Dessert" className="h-10 w-auto" />
+              </span> */}
+              
             </Link>
           </div>
 

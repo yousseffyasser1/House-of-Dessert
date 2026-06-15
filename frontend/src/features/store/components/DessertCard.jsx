@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useCart } from '../../../context/CartContext';
 import Button from '../../../components/common/Button';
 
@@ -18,7 +19,7 @@ export default function DessertCard({ product }) {
   return (
     <div className="bg-white rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-stone-100 flex flex-col text-right h-full group">
       {/* Product Image */}
-      <div className="relative overflow-hidden aspect-video bg-amber-50">
+      <Link to={`/product/${product.id}`} className="relative overflow-hidden aspect-video bg-amber-50 block">
         <img
           src={image}
           alt={name}
@@ -29,14 +30,16 @@ export default function DessertCard({ product }) {
         <span className="absolute top-4 right-4 bg-amber-100 text-amber-800 text-xs font-semibold px-3 py-1 rounded-full shadow-sm">
           {getCategoryName(category)}
         </span>
-      </div>
+      </Link>
 
       {/* Product Details */}
       <div className="p-6 flex flex-col flex-grow">
         {/* Price & Name */}
         <div className="flex items-baseline justify-between mb-2">
           <span className="text-lg font-bold text-amber-900">{price} جنيه</span>
-          <h3 className="text-xl font-bold text-stone-800 font-serif line-clamp-1">{name}</h3>
+          <Link to={`/product/${product.id}`} className="hover:text-amber-700 transition-colors">
+            <h3 className="text-xl font-bold text-stone-800 font-serif line-clamp-1">{name}</h3>
+          </Link>
         </div>
 
         {/* Description */}
