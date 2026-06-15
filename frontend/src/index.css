@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Cairo", system-ui, -apple-system, sans-serif;
+  --font-serif: "Playfair Display", Georgia, serif;
+}
+
+@layer base {
+  body {
+    background-color: #FCFBF8;
+    color: #2D1B13; /* Warm stone/brown tone */
+  }
+}
+
+/* Micro-animations */
+@keyframes scale {
+  0% { transform: scale(0.9); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.animate-scale {
+  animation: scale 0.3s ease-out forwards;
+}
