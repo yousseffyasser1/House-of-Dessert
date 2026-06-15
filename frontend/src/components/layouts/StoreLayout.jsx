@@ -1,5 +1,6 @@
 import { Link, Outlet } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
+import logo from '../../assets/logo.png';
 
 export default function StoreLayout() {
   const { cartCount } = useCart();
@@ -12,10 +13,11 @@ export default function StoreLayout() {
           
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/" className="flex items-center gap-3">
               <span className="text-xl font-bold tracking-tight text-amber-950 font-serif">
                 House Of Dessert
               </span>
+              <img src={logo} alt="House Of Dessert" className="h-10 w-auto" />
             </Link>
           </div>
 
