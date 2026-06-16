@@ -131,9 +131,11 @@ export default function Cart() {
           </div>
 
           <div className="pt-2">
-            <Button variant="secondary" className="w-full justify-center h-12 shadow-sm">
-              إتمـام الطلب
-            </Button>
+            <Link to="/checkout">
+              <Button variant="secondary" className="w-full justify-center h-12 shadow-sm">
+                إتمـام الطلب
+              </Button>
+            </Link>
           </div>
         </div>
 

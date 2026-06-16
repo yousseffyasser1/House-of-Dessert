@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { products } from '../../services/mockData';
 import { useCart } from '../../context/CartContext';
 import Button from '../../components/common/Button';
+import RelatedProducts from '../../features/store/components/RelatedProducts';
 
 export default function ProductDetails() {
   const { productId } = useParams();
@@ -10,6 +11,11 @@ export default function ProductDetails() {
   const [quantity, setQuantity] = useState(1);
 
   const product = products.find(p => p.id === productId) || products[0];
+
+  // Scroll to top on product navigation
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [productId]);
 
   const getCategoryName = (cat) => {
     switch (cat) {
@@ -19,11 +25,6 @@ export default function ProductDetails() {
       default: return cat;
     }
   };
-
-  // Get similar products
-  const similarProducts = products
-    .filter(p => p.category === product.category && p.id !== product.id)
-    .slice(0, 3);
 
   const handleIncrement = () => setQuantity(prev => prev + 1);
   const handleDecrement = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
@@ -104,36 +105,8 @@ export default function ProductDetails() {
         </div>
       </div>
 
-      {/* Similar Products (حلويات مشابهة) */}
-      {similarProducts.length > 0 && (
-        <div className="border-t border-stone-200 pt-12 space-y-8">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-stone-800 font-serif">حلويات مشابهة</h2>
-            <Link to={`/category/${product.category}`} className="text-sm font-bold text-amber-600 hover:text-amber-700">
-              عرض الكل
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
-            {similarProducts.map((p) => (
-              <div key={p.id} className="bg-white rounded-2xl border border-stone-150 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col">
-                <div className="aspect-video bg-amber-50 relative">
-                  <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
-                </div>
-                <div className="p-5 flex flex-col flex-grow justify-between">
-                  <div className="flex justify-between items-baseline mb-2">
-                    <span className="text-amber-700 font-bold">{p.price} جنيه</span>
-                    <h4 className="font-bold text-stone-800 line-clamp-1">{p.name}</h4>
-                  </div>
-                  <Link to={`/product/${p.id}`} className="mt-4 text-center block py-2 bg-stone-50 hover:bg-amber-50 rounded-xl text-stone-600 hover:text-amber-800 text-xs font-bold transition-all border border-stone-100">
-                    عرض التفاصيل
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Related Products */}
+      <RelatedProducts productId={product.id} category={product.category} />
 
     </div>
   );
