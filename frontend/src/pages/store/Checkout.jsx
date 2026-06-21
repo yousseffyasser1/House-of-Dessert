@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import Button from '../../components/common/Button';
 
+const PAYMENT_NUMBER = '01206668841';
+
 export default function Checkout() {
   const { cart, cartTotal, clearCart } = useCart();
 
@@ -13,6 +15,8 @@ export default function Checkout() {
     address: '',
     deliveryMethod: 'delivery',
     notes: '',
+    paymentMethod: '',
+    walletProvider: '',
   });
 
   // Validation errors state
@@ -21,6 +25,7 @@ export default function Checkout() {
   // UI states
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Handle input changes
   const handleChange = (e) => {
@@ -50,6 +55,16 @@ export default function Checkout() {
       newErrors.address = 'يرجى إدخال العنوان';
     }
 
+    if (!formData.paymentMethod) {
+      newErrors.paymentMethod = 'يرجى اختيار طريقة الدفع';
+    }
+
+    if (formData.paymentMethod === 'wallet') {
+      if (!formData.walletProvider) {
+        newErrors.walletProvider = 'يرجى اختيار المحفظة الإلكترونية';
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -72,6 +87,10 @@ export default function Checkout() {
       },
       deliveryMethod: formData.deliveryMethod,
       notes: formData.notes.trim(),
+      payment: {
+        method: formData.paymentMethod,
+        walletProvider: formData.paymentMethod === 'wallet' ? formData.walletProvider : null,
+      },
       items: [...cart],
       totalPrice: cartTotal,
       status: 'pending',
@@ -81,9 +100,9 @@ export default function Checkout() {
     // Simulate API call delay
     setTimeout(() => {
       // Save order to localStorage (orders history)
-      const existingOrders = JSON.parse(localStorage.getItem('dessert_orders') || '[]');
+      const existingOrders = JSON.parse(localStorage.getItem('house-of-dessert-orders') || '[]');
       existingOrders.push(order);
-      localStorage.setItem('dessert_orders', JSON.stringify(existingOrders));
+      localStorage.setItem('house-of-dessert-orders', JSON.stringify(existingOrders));
 
       // Clear cart
       clearCart();
@@ -291,6 +310,216 @@ export default function Checkout() {
                   </div>
                 </label>
               </div>
+            </div>
+
+            {/* Payment Method Card */}
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200/60 shadow-sm space-y-4">
+              <h2 className="text-xl font-bold text-stone-850 mb-1">
+                طريقة الدفع <span className="text-rose-500">*</span>
+              </h2>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* InstaPay */}
+                <label
+                  className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                    formData.paymentMethod === 'instapay'
+                      ? 'border-amber-500 bg-amber-50/50 shadow-sm'
+                      : 'border-stone-200 bg-stone-50/50 hover:border-stone-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="instapay"
+                    checked={formData.paymentMethod === 'instapay'}
+                    onChange={handleChange}
+                    className="sr-only"
+                  />
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                    formData.paymentMethod === 'instapay' ? 'border-amber-500' : 'border-stone-300'
+                  }`}>
+                    {formData.paymentMethod === 'instapay' && (
+                      <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                    )}
+                  </div>
+                  <span className="font-bold text-stone-800 text-sm text-center">إنستا باي</span>
+                </label>
+
+                {/* Electronic Wallet */}
+                <label
+                  className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                    formData.paymentMethod === 'wallet'
+                      ? 'border-amber-500 bg-amber-50/50 shadow-sm'
+                      : 'border-stone-200 bg-stone-50/50 hover:border-stone-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="wallet"
+                    checked={formData.paymentMethod === 'wallet'}
+                    onChange={handleChange}
+                    className="sr-only"
+                  />
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                    formData.paymentMethod === 'wallet' ? 'border-amber-500' : 'border-stone-300'
+                  }`}>
+                    {formData.paymentMethod === 'wallet' && (
+                      <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                    )}
+                  </div>
+                  <span className="font-bold text-stone-800 text-sm text-center">محفظة إلكترونية</span>
+                </label>
+
+                {/* Cash on Delivery */}
+                <label
+                  className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                    formData.paymentMethod === 'cod'
+                      ? 'border-amber-500 bg-amber-50/50 shadow-sm'
+                      : 'border-stone-200 bg-stone-50/50 hover:border-stone-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="cod"
+                    checked={formData.paymentMethod === 'cod'}
+                    onChange={handleChange}
+                    className="sr-only"
+                  />
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                    formData.paymentMethod === 'cod' ? 'border-amber-500' : 'border-stone-300'
+                  }`}>
+                    {formData.paymentMethod === 'cod' && (
+                      <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                    )}
+                  </div>
+                  <span className="font-bold text-stone-800 text-sm text-center">الدفع عند الاستلام</span>
+                </label>
+              </div>
+
+              {errors.paymentMethod && (
+                <p className="text-rose-500 text-xs mt-1.5 mr-1">{errors.paymentMethod}</p>
+              )}
+
+              {/* Payment Instructions - shown for InstaPay or Electronic Wallet */}
+              {(formData.paymentMethod === 'instapay' || formData.paymentMethod === 'wallet') && (
+                <div className="mt-4 p-5 bg-amber-50/60 rounded-2xl border border-amber-200/60 space-y-3">
+                  <p className="text-sm font-bold text-stone-800">
+                    لإتمام الطلب، يرجى تحويل المبلغ على الرقم التالي:
+                  </p>
+
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-stone-500">رقم التحويل:</span>
+                      <span className="text-lg font-black text-amber-700 tracking-wide">{PAYMENT_NUMBER}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(PAYMENT_NUMBER);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white border border-stone-200 text-xs font-bold text-stone-700 hover:border-amber-300 hover:text-amber-700 transition-all"
+                    >
+                      {copied ? (
+                        <>
+                          <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                          </svg>
+                          تم نسخ الرقم
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          نسخ
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  <p className="text-xs text-stone-500 leading-relaxed">
+                    ثم احتفظ بإثبات التحويل وسيتم التواصل معك لتأكيد الطلب.
+                  </p>
+
+                  {formData.paymentMethod === 'wallet' && (
+                    <p className="text-xs font-bold text-stone-700 bg-white/60 rounded-lg px-3 py-2 inline-block">
+                      طريقة الدفع: محفظة إلكترونية
+                    </p>
+                  )}
+                  {formData.paymentMethod === 'instapay' && (
+                    <p className="text-xs font-bold text-stone-700 bg-white/60 rounded-lg px-3 py-2 inline-block">
+                      طريقة الدفع: إنستا باي
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Wallet Provider Selection - shown only when wallet is selected */}
+              {formData.paymentMethod === 'wallet' && (
+                <div className="mt-4 space-y-2">
+                  <label className="block text-sm font-bold text-stone-700 mb-2">
+                    اختر المحفظة الإلكترونية <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label
+                      className={`relative flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                        formData.walletProvider === 'vodafone'
+                          ? 'border-amber-500 bg-amber-50/50 shadow-sm'
+                          : 'border-stone-200 bg-white hover:border-stone-300'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="walletProvider"
+                        value="vodafone"
+                        checked={formData.walletProvider === 'vodafone'}
+                        onChange={handleChange}
+                        className="sr-only"
+                      />
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
+                        formData.walletProvider === 'vodafone' ? 'border-amber-500' : 'border-stone-300'
+                      }`}>
+                        {formData.walletProvider === 'vodafone' && (
+                          <div className="w-2 h-2 rounded-full bg-amber-500" />
+                        )}
+                      </div>
+                      <span className="font-bold text-stone-800 text-sm">فودافون كاش</span>
+                    </label>
+
+                    <label
+                      className={`relative flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                        formData.walletProvider === 'orange'
+                          ? 'border-amber-500 bg-amber-50/50 shadow-sm'
+                          : 'border-stone-200 bg-white hover:border-stone-300'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="walletProvider"
+                        value="orange"
+                        checked={formData.walletProvider === 'orange'}
+                        onChange={handleChange}
+                        className="sr-only"
+                      />
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
+                        formData.walletProvider === 'orange' ? 'border-amber-500' : 'border-stone-300'
+                      }`}>
+                        {formData.walletProvider === 'orange' && (
+                          <div className="w-2 h-2 rounded-full bg-amber-500" />
+                        )}
+                      </div>
+                      <span className="font-bold text-stone-800 text-sm">أورانج كاش</span>
+                    </label>
+                  </div>
+                  {errors.walletProvider && (
+                    <p className="text-rose-500 text-xs mt-1.5 mr-1">{errors.walletProvider}</p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Order Notes Card */}
