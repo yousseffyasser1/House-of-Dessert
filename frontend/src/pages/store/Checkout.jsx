@@ -2,8 +2,17 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import Button from '../../components/common/Button';
+import { addOrder } from '../../features/orders/order.storage';
 
 const PAYMENT_NUMBER = '01206668841';
+
+const createOrderId = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return `ORD-${crypto.randomUUID()}`;
+  }
+
+  return `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
 
 export default function Checkout() {
   const { cart, cartTotal, clearCart } = useCart();
@@ -41,6 +50,10 @@ export default function Checkout() {
   const validate = () => {
     const newErrors = {};
 
+    if (cart.length === 0) {
+      newErrors.cart = 'السلة فارغة';
+    }
+
     if (!formData.customerName.trim()) {
       newErrors.customerName = 'يرجى إدخال الاسم';
     }
@@ -77,38 +90,48 @@ export default function Checkout() {
 
     setIsSubmitting(true);
 
+    const paymentMethod = formData.paymentMethod === 'cod'
+      ? 'cash_on_delivery'
+      : formData.paymentMethod;
+
+    const shouldStoreTransferNumber = paymentMethod === 'instapay' || paymentMethod === 'wallet';
+
     // Create order object
     const order = {
-      id: `ORD-${Date.now()}`,
+      id: createOrderId(),
       customer: {
         name: formData.customerName.trim(),
         phone: formData.phone.trim(),
         address: formData.address.trim(),
       },
       deliveryMethod: formData.deliveryMethod,
-      notes: formData.notes.trim(),
       payment: {
-        method: formData.paymentMethod,
-        walletProvider: formData.paymentMethod === 'wallet' ? formData.walletProvider : null,
+        method: paymentMethod,
+        provider: paymentMethod === 'wallet' ? formData.walletProvider : paymentMethod,
+        transferNumber: shouldStoreTransferNumber ? PAYMENT_NUMBER : '',
       },
       items: [...cart],
-      totalPrice: cartTotal,
+      total: cartTotal,
       status: 'pending',
-      createdDate: new Date().toISOString(),
+      notes: formData.notes.trim(),
+      createdAt: new Date().toISOString(),
     };
 
     // Simulate API call delay
     setTimeout(() => {
-      // Save order to localStorage (orders history)
-      const existingOrders = JSON.parse(localStorage.getItem('house-of-dessert-orders') || '[]');
-      existingOrders.push(order);
-      localStorage.setItem('house-of-dessert-orders', JSON.stringify(existingOrders));
+      try {
+        // Save order to localStorage (orders history)
+        addOrder(order);
 
-      // Clear cart
-      clearCart();
+        // Clear cart only after the order is saved successfully
+        clearCart();
 
-      setIsSubmitting(false);
-      setIsSuccess(true);
+        setIsSubmitting(false);
+        setIsSuccess(true);
+      } catch (error) {
+        console.error('Failed to save order', error);
+        setIsSubmitting(false);
+      }
     }, 800);
   };
 
