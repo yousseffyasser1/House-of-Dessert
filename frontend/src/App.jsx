@@ -10,6 +10,7 @@ import Checkout from './pages/store/Checkout';
 import Contact from './pages/store/Contact';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminOrders from './pages/admin/AdminOrders';
+import AdminCalendar from './pages/admin/AdminCalendar';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="orders" element={<AdminOrders />} />
+            <Route path="calendar" element={<AdminCalendar />} />
           </Route>
         </Routes>
       </Router>

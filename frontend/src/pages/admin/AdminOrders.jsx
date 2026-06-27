@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { getOrders, saveOrders } from '../../features/orders/order.storage';
 
 const STATUS_OPTIONS = [
@@ -7,6 +7,14 @@ const STATUS_OPTIONS = [
   { value: 'preparing', label: 'قيد التحضير', color: 'bg-purple-100 text-purple-800 border-purple-200' },
   { value: 'delivered', label: 'تم التوصيل', color: 'bg-green-100 text-green-800 border-green-200' },
   { value: 'cancelled', label: 'ملغي', color: 'bg-rose-100 text-rose-800 border-rose-200' },
+];
+
+const FILTER_OPTIONS = [
+  { value: 'all', label: 'الكل' },
+  { value: 'pending', label: 'جديد' },
+  { value: 'preparing', label: 'قيد التحضير' },
+  { value: 'delivered', label: 'تم التوصيل' },
+  { value: 'cancelled', label: 'ملغي' },
 ];
 
 const PAYMENT_LABELS = {
@@ -35,24 +43,58 @@ function formatDate(isoString) {
 }
 
 function AdminOrders() {
-  const [orders, setOrders] = useState(() => {
-    const allOrders = getOrders();
-    return [...allOrders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const [allOrders, setAllOrders] = useState(() => {
+    return getOrders();
   });
   const [updatingId, setUpdatingId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortOrder, setSortOrder] = useState('newest');
 
   const reloadOrders = () => {
-    const allOrders = getOrders();
-    const sorted = [...allOrders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    setOrders(sorted);
+    const freshOrders = getOrders();
+    setAllOrders(freshOrders);
   };
+
+  const filteredAndSortedOrders = useMemo(() => {
+    let result = [...allOrders];
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.trim().toLowerCase();
+      result = result.filter((order) => {
+        const orderId = order.id.toLowerCase();
+        const customerName = order.customer.name.toLowerCase();
+        const phoneNumber = order.customer.phone.toLowerCase();
+        return (
+          orderId.includes(query) ||
+          customerName.includes(query) ||
+          phoneNumber.includes(query)
+        );
+      });
+    }
+
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      result = result.filter((order) => order.status === statusFilter);
+    }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      const dateA = new Date(a.createdAt);
+      const dateB = new Date(b.createdAt);
+      return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+    });
+
+    return result;
+  }, [allOrders, searchQuery, statusFilter, sortOrder]);
 
   const handleStatusChange = (orderId, newStatus) => {
     setUpdatingId(orderId);
-    const updatedOrders = orders.map((order) =>
+    const updatedOrders = allOrders.map((order) =>
       order.id === orderId ? { ...order, status: newStatus } : order
     );
-    setOrders(updatedOrders);
+    setAllOrders(updatedOrders);
     saveOrders(updatedOrders);
     setUpdatingId(null);
   };
@@ -61,8 +103,8 @@ function AdminOrders() {
     return STATUS_OPTIONS.find((s) => s.value === statusValue) || STATUS_OPTIONS[0];
   };
 
-  // --- Empty State ---
-  if (orders.length === 0) {
+  // --- Empty State (No orders at all) ---
+  if (allOrders.length === 0) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center flex flex-col items-center justify-center space-y-6">
         <div className="w-24 h-24 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 shadow-inner">
@@ -83,6 +125,28 @@ function AdminOrders() {
     );
   }
 
+  // --- Empty State (No matching orders) ---
+  if (filteredAndSortedOrders.length === 0) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center flex flex-col items-center justify-center space-y-6">
+        <div className="w-24 h-24 rounded-full bg-stone-100 flex items-center justify-center text-stone-400">
+          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="1.5"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+        </div>
+        <h1 className="text-3xl font-bold text-stone-800">لا توجد طلبات مطابقة</h1>
+        <p className="text-stone-400 text-sm max-w-sm leading-relaxed">
+          لم يتم العثور على طلبات تطابق معايير البحث والفلتر المحددة.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Page Header */}
@@ -90,7 +154,7 @@ function AdminOrders() {
           <div>
             <h1 className="text-3xl font-extrabold text-stone-850 font-serif">إدارة الطلبات</h1>
             <p className="text-stone-400 text-sm mt-1">
-              إجمالي الطلبات: <span className="font-bold text-stone-700">{orders.length}</span>
+              إجمالي الطلبات: <span className="font-bold text-stone-700">{allOrders.length}</span>
             </p>
           </div>
           <button
@@ -109,23 +173,116 @@ function AdminOrders() {
           </button>
         </div>
 
+        {/* Search, Filter, and Sort Controls */}
+        <div className="bg-white rounded-3xl border border-stone-200/60 shadow-sm p-4 sm:p-6 mb-8 space-y-4">
+          {/* Search Bar */}
+          <div className="relative">
+            <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+              <svg className="w-5 h-5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+            <input
+              type="text"
+              placeholder="البحث برقم الطلب، اسم العميل، أو رقم الهاتف..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pr-12 pl-4 py-3 bg-stone-50 border border-stone-200 rounded-2xl text-sm text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+            />
+          </div>
+
+          {/* Filter and Sort Row */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Status Filter */}
+            <div className="flex-1">
+              <label className="block text-xs font-bold text-stone-500 mb-2">فلتر الحالة</label>
+              <div className="relative">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="w-full appearance-none pl-4 pr-10 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm font-bold text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all cursor-pointer"
+                >
+                  {FILTER_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <svg
+                  className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-stone-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2.5"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </div>
+            </div>
+
+            {/* Sort Order */}
+            <div className="flex-1">
+              <label className="block text-xs font-bold text-stone-500 mb-2">ترتيب حسب</label>
+              <div className="relative">
+                <select
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value)}
+                  className="w-full appearance-none pl-4 pr-10 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm font-bold text-stone-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all cursor-pointer"
+                >
+                  <option value="newest">الأحدث أولاً</option>
+                  <option value="oldest">الأقدم أولاً</option>
+                </select>
+                <svg
+                  className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-stone-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2.5"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Results Count */}
+          <div className="pt-2 border-t border-stone-100">
+            <p className="text-xs text-stone-500">
+              عرض <span className="font-bold text-stone-700">{filteredAndSortedOrders.length}</span> من أصل <span className="font-bold text-stone-700">{allOrders.length}</span> طلب
+            </p>
+          </div>
+        </div>
+
         {/* Orders List */}
         <div className="space-y-6">
-          {orders.map((order) => {
+          {filteredAndSortedOrders.map((order) => {
             const statusConfig = getStatusConfig(order.status);
             const isUpdating = updatingId === order.id;
 
             return (
               <div
                 key={order.id}
-                className="bg-white rounded-3xl border border-stone-200/60 shadow-sm overflow-hidden"
+                className="bg-white rounded-3xl border border-stone-200/60 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
               >
                 {/* Order Header */}
                 <div className="px-6 sm:px-8 py-5 border-b border-stone-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                    <span className="text-sm font-bold text-stone-800">
-                      رقم الطلب: <span className="text-amber-700">{order.id}</span>
-                    </span>
+                  <span className="text-sm font-bold text-stone-800">
+                    رقم الطلب: <span className="text-amber-700 font-mono">{order.id}</span>
+                  </span>
                     <span className="text-xs text-stone-400">
                       {formatDate(order.createdAt)}
                     </span>
